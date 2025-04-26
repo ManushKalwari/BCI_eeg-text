@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+from lion_pytorch import Lion
 
 from eeg_pretraining.pretrainer_model import EEGPretrainer
 from eeg_text_dataset import EEGTextDataset, collate_fn   
@@ -18,8 +19,8 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 batch_size = 16
-epochs = 80
-lr = 1e-4
+epochs = 160
+lr = 5e-7
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # === Data ===
@@ -28,7 +29,9 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True, collate_fn
 
 # === Model ===
 model = EEGPretrainer().to(device)
-optimizer = optim.Adam(model.parameters(), lr=lr)
+# used it for first 200 epochs
+optimizer = optim.AdamW(model.parameters(), lr=lr) 
+#optimizer = Lion(model.parameters(), lr=lr, weight_decay=0.01)
 criterion = nn.MSELoss()
 
 # === Load checkpoint if exists ===
@@ -69,4 +72,4 @@ for epoch in range(start_epoch, epochs):  # <-- MODIFIED
     }, checkpoint_path)
 
 # === Optional: Save final model separately ===
-#torch.save(model.state_dict(), "checkpoints/eeg_pretrained3.pth")
+torch.save(model.state_dict(), "checkpoints/eeg_pretrained_model.pth")
