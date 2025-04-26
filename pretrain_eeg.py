@@ -18,7 +18,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 batch_size = 16
-epochs = 20
+epochs = 80
 lr = 1e-4
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -69,4 +69,4 @@ for epoch in range(start_epoch, epochs):  # <-- MODIFIED
     }, checkpoint_path)
 
 # === Optional: Save final model separately ===
-torch.save(model.state_dict(), "eeg_pretrained.pth")
+#torch.save(model.state_dict(), "checkpoints/eeg_pretrained3.pth")
