@@ -21,7 +21,7 @@ class EEGTextDataset(Dataset):
                             word = re.sub(r"[^\w]", "", word_raw.lower())  # strip punctuation and lowercase
 
                             eeg = pair[1]
-                            print(f"[{filename}] Index {i}: word = '{word}', eeg shape = {eeg.shape}")
+                            #print(f"[{filename}] Index {i}: word = '{word}', eeg shape = {eeg.shape}")
                             
                             if eeg.shape[0] != 105:
                                 print(f"[{filename}] Skipping index {i} with bad EEG shape {eeg.shape}")
@@ -41,7 +41,7 @@ class EEGTextDataset(Dataset):
     def __getitem__(self, idx):
         
         word, eeg = self.samples[idx]
-        print("DEBUG:", type(eeg), eeg)  # check this
+        #print("DEBUG:", type(eeg), eeg)  # check this
 
         eeg = np.load(eeg) if isinstance(eeg, str) else eeg
         return {
