@@ -59,3 +59,10 @@ def collate_fn(batch):
     eegs = [item['eeg'] for item in batch]  # already tensors
     eegs_padded = pad_sequence(eegs, batch_first=True)  # (B, T, C)
     return {'eeg': eegs_padded}
+
+
+
+# this is to load just the text, we use this for BERT
+def text_collate_fn(batch):
+    words = [item['word'] for item in batch]
+    return {'word': words}
