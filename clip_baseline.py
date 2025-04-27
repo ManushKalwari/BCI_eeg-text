@@ -26,6 +26,7 @@ class EEGTextCLIP(nn.Module):
         super().__init__()
         self.eeg_encoder = EEGEncoder(eeg_dim, embed_dim)
         self.text_encoder = TextEncoder(text_dim, embed_dim)
+        self.logit_scale = nn.Parameter(torch.ones([]) * torch.log(torch.tensor(1/0.07)))  # <-- ADD THIS
 
     def forward(self, eeg, text):
         eeg_embeds = self.eeg_encoder(eeg)   # (B, D)
