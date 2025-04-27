@@ -1,43 +1,34 @@
 import torch
 from torch import nn, optim
 from torch.utils.data import Dataset, DataLoader
-from transformers import BartTokenizer
+from transformers import BartTokenizer, BartForConditionalGeneration
 import os
-from transformers import BartForConditionalGeneration
-
-bart_decoder = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
-
-# === Settings ===
-epochs = 20
-batch_size = 32
-learning_rate = 1e-4
-save_every = 5  # save checkpoint every 5 epochs
 
 # === Device ===
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
 # === Load EEG encoder from CLIP model ===
-from clip_baseline import EEGTextCLIP  # your CLIP model
+from clip_baseline import EEGTextCLIP
 
-clip_checkpoint_path = "clip_baseline_model.pth"  # your CLIP trained checkpoint
+clip_checkpoint_path = "clip_baseline_model.pth"
 
 clip_model = EEGTextCLIP(eeg_dim=256, text_dim=768, embed_dim=512)
 clip_model.load_state_dict(torch.load(clip_checkpoint_path, map_location=device))
 clip_model.eval()
 
-eeg_encoder = clip_model.eeg_encoder  # extract
+eeg_encoder = clip_model.eeg_encoder
 for param in eeg_encoder.parameters():
-    param.requires_grad = False  # freeze
+    param.requires_grad = False
 print("Loaded frozen EEG encoder.")
 
 # === Load your EEGTextBART model ===
-from bart_decoder import EEGtoBART  # make sure your model code is ready
-from eeg_text_dataset import EEGTextDataset  # to get raw words
+from bart_decoder import EEGtoBART  # we defined it above
+from eeg_text_dataset import EEGTextDataset  # original dataset for loading words
 
 # === Load train embeddings ===
 train_data = torch.load('embeddings/train_embeddings.pt', map_location=device)
-eeg_train_embeddings = train_data['eeg']  # shape [N_train, 256]
+eeg_train_embeddings = train_data['eeg']  # [N_train, 256]
 print(f"Loaded EEG train embeddings: {eeg_train_embeddings.shape}")
 
 # === Load words from EEGTextDataset ===
@@ -54,9 +45,8 @@ print(f"Using {len(train_words)} words aligned with EEG embeddings.")
 # === Load tokenizer ===
 tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
 
-# === Define Dataset ===
+# === Define EEG-Embedding → Text Dataset ===
 class EEGToTextDataset(Dataset):
-  # this is difefrent fom the one in eeg_text_dataset, that uses raw eeg, here we use embeddings
     def __init__(self, eeg_embeddings, texts, tokenizer):
         self.eeg_embeddings = eeg_embeddings
         self.texts = texts
@@ -70,16 +60,18 @@ class EEGToTextDataset(Dataset):
         text = self.texts[idx]
 
         inputs = self.tokenizer(text, return_tensors='pt', padding='max_length', truncation=True, max_length=32)
-        input_ids = inputs['input_ids'].squeeze(0)  # (seq_len)
+        input_ids = inputs['input_ids'].squeeze(0)
         attention_mask = inputs['attention_mask'].squeeze(0)
 
         return eeg, input_ids, attention_mask
 
 # === Create Dataset and Loader ===
+batch_size = 32
 train_dataset = EEGToTextDataset(eeg_train_embeddings, train_words, tokenizer)
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-# === Load Model ===
+# === Initialize Model ===
+bart_decoder = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
 model = EEGtoBART(
     eeg_encoder=eeg_encoder,
     bart_model=bart_decoder,
@@ -88,13 +80,15 @@ model = EEGtoBART(
 )
 model = model.to(device)
 
-# === Optimizer ===
+# === Optimizer and Loss ===
+learning_rate = 1e-4
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-
-# === Loss Function ===
 loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
 # === Training Loop ===
+epochs = 20
+save_every = 5
+
 for epoch in range(1, epochs + 1):
     model.train()
     total_loss = 0
@@ -106,8 +100,8 @@ for epoch in range(1, epochs + 1):
 
         outputs = model(eeg_batch, labels=input_ids)
 
-        logits = outputs.logits[:, :-1, :].contiguous()  # predict next token
-        labels = input_ids[:, 1:].contiguous()  # shifted target
+        logits = outputs.logits[:, :-1, :].contiguous()
+        labels = input_ids[:, 1:].contiguous()
 
         loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
 
@@ -120,7 +114,7 @@ for epoch in range(1, epochs + 1):
     avg_loss = total_loss / len(train_loader)
     print(f"Epoch {epoch}/{epochs}, Loss: {avg_loss:.4f}")
 
-    # === Save checkpoint ===
+    # Save checkpoint
     if epoch % save_every == 0 or epoch == epochs:
         save_path = f"bart_decoder_checkpoint_epoch{epoch}.pth"
         torch.save({
