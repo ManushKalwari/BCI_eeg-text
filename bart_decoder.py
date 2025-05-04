@@ -42,6 +42,8 @@ class EEGtoBART(nn.Module):
         outputs = self.bart(encoder_outputs=encoder_outputs, labels=labels)
         return outputs
 
+
+
 # === Setup Full Model ===
 bart_hidden_dim = bart_decoder.config.d_model  # usually 768
 

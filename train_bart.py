@@ -27,7 +27,7 @@ from bart_decoder import EEGtoBART  # we defined it above
 from eeg_text_dataset import EEGTextDataset  # original dataset for loading words
 
 # === Load train embeddings ===
-train_data = torch.load('embeddings/train_embeddings.pt', map_location=device)
+train_data = torch.load('/content/train_embeddings.pt', map_location=device)
 eeg_train_embeddings = train_data['eeg']  # [N_train, 256]
 print(f"Loaded EEG train embeddings: {eeg_train_embeddings.shape}")
 
@@ -86,7 +86,7 @@ optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
 # === Training Loop ===
-epochs = 71
+epochs = 90
 save_every = 5
 
 # === Resume from checkpoint if exists ===
