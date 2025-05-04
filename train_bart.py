@@ -82,14 +82,29 @@ model = model.to(device)
 
 # === Optimizer and Loss ===
 learning_rate = 1e-4
-optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
 loss_fn = nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
 
 # === Training Loop ===
-epochs = 20
+epochs = 71
 save_every = 5
 
-for epoch in range(1, epochs + 1):
+# === Resume from checkpoint if exists ===
+start_epoch = 1
+checkpoint_path = "bart_decoder_checkpoint_epoch.pth"  # or auto-detect latest
+
+if os.path.exists(checkpoint_path):
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    start_epoch = checkpoint['epoch'] + 1
+    print(f"✅ Resumed from checkpoint: {checkpoint_path} (epoch {checkpoint['epoch']})")
+else:
+    print("ℹ️ No checkpoint found, starting fresh.")
+
+
+
+for epoch in range(start_epoch, epochs + 1):
     model.train()
     total_loss = 0
 
@@ -116,7 +131,7 @@ for epoch in range(1, epochs + 1):
 
     # Save checkpoint
     if epoch % save_every == 0 or epoch == epochs:
-        save_path = f"bart_decoder_checkpoint_epoch{epoch}.pth"
+        save_path = f"bart_decoder_checkpoint_epoch.pth"
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
@@ -125,3 +140,6 @@ for epoch in range(1, epochs + 1):
         print(f"Checkpoint saved at {save_path}!")
 
 print("Training complete ✅")
+
+torch.save(model.state_dict(), "bart_decoder_final.pth")
+print("Final model saved!")
