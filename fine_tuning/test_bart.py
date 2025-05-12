@@ -32,14 +32,20 @@ model = EEGtoBART(
     bart_model=bart_decoder,
     eeg_embed_dim=512,
     bart_hidden_dim=bart_decoder.config.d_model
-)
-model.load_state_dict(torch.load('/content/bart_decoder_checkpoint_epoch.pth', map_location=device)['model_state_dict'])
-model = model.to(device)
+).to(device)
+
+# model.load_state_dict(torch.load('/content/bart_decoder_checkpoint_epoch20.pth', map_location=device)['model_state_dict'])
+# model = model.to(device)
+# model.eval()
+# print("Model loaded and ready.")
+
+# 2. Then load checkpoint
+checkpoint = torch.load('/content/bart_decoder_checkpoint_epoch.pth', map_location=device)
+model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
-print("Model loaded and ready.")
 
 # === Load test EEG embeddings ===
-test_data = torch.load('/content/embeddings/test_embeddings.pt', map_location=device)
+test_data = torch.load('/content/test_embeddings.pt', map_location=device)
 eeg_test_embeddings = test_data['eeg']  # [N_test, 256]
 print(f"Loaded EEG test embeddings: {eeg_test_embeddings.shape}")
 
@@ -94,6 +100,11 @@ with torch.no_grad():
 
         predictions = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
         references = ref_batch
+
+        # 🔍 DEBUG: print a few predictions vs. references
+        for i in range(min(5, len(predictions))):
+            print(f"\n🔹 Reference: {references[i]}")
+            print(f"🔸 Prediction: {predictions[i]}")
 
         all_preds.extend(predictions)
         all_refs.extend(references)
