@@ -4,7 +4,7 @@ eeg_pretrain_utils.py
 Contains utility modules used in the self-supervised EEG pretraining stage:
 
 1. EEGPatchEmbedding – converts raw EEG time-series into overlapping patches using 1D convolutions.
-2. LearnablePositionalEncoding – adds learnable position embeddings to patch sequences.
+2. PositionalEncoding – adds learnable position embeddings to patch sequences.
 3. EEGMasker – randomly masks a subset of patches for reconstruction (used in masked prediction).
 """
 
@@ -38,7 +38,7 @@ class EEGMasker:
         return mask
 
 
-class LearnablePositionalEncoding(nn.Module):
+class PositionalEncoding(nn.Module):
     """
     Adds a learnable positional embedding to each patch embedding to encode temporal position.
     """
