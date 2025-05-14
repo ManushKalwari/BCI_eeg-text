@@ -42,8 +42,8 @@ loss_history_path = "checkpoints/loss_history.pt"
 loss_curve_path = "checkpoints/loss_curve.png"
 
 batch_size = 16
-epochs = 3
-lr = 5e-7
+epochs = 500
+lr = 5e-5
 start_epoch = 0
 
 # === Device ===
@@ -134,7 +134,7 @@ torch.save(model.state_dict(), final_model_path)
 print(f"Final model saved to {final_model_path}")
 
 # === Plot Loss Curve ===
-plt.figure(figsize=(8, 5))
+plt.figure(figsize=(12, 9))
 plt.plot(train_losses, label="Train Loss", linewidth=2)
 plt.plot(val_losses, label="Val Loss", linewidth=2)
 plt.xlabel("Epoch")
@@ -143,6 +143,6 @@ plt.title("EEG Pretraining Loss Curve")
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
-plt.savefig(loss_curve_path)
+plt.savefig(loss_curve_path, dpi=300)
 plt.close()
 print(f"Saved loss curve to {loss_curve_path}")
