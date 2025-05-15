@@ -1,134 +1,165 @@
-# train_clip_baseline.py
+"""
+train_clip_baseline.py (with validation)
+
+Trains a CLIP-style model to align EEG and Text embeddings with contrastive loss.
+Adds validation split, loss tracking, and plots.
+"""
+
 import torch
 import os
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, random_split
 import torch.optim as optim
+import matplotlib.pyplot as plt
 from clip_baseline import EEGTextCLIP
-
 
 # === Hyperparameters ===
 batch_size = 256
-lr = 1e-3
+lr = 1e-6
 epochs = 500
+val_ratio = 0.2
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# eeg_embeddings_path = "embeddings/eeg_embeddings.pt" 
-# text_embeddings_path = "embeddings/text_embeddings.pt" 
+# === Load full train embeddings ===
+data = torch.load('/content/train_embeddings.pt')
+eeg_all = data['eeg']
+text_all = data['text']
+assert len(eeg_all) == len(text_all)
 
-
-# === Load embeddings ===
-# eeg_embeddings_path = "eeg_embeddings.pt"
-# text_embeddings_path = "text_embeddings.pt"
-
-# eeg_embeddings = torch.load(eeg_embeddings_path)  # shape [N, eeg_dim]
-# text_embeddings = torch.load(text_embeddings_path)  # shape [N, text_dim]
-# text_embeddings = text_embeddings['embeddings']
-
-# print(f"EEG Embeddings Shape: {eeg_embeddings.shape}")
-# print(f"Text Embeddings Shape: {text_embeddings.shape}")
-
-# assert len(eeg_embeddings) == len(text_embeddings), "Mismatch in EEG and Text samples!"
-
-# === Load train embeddings ===
-train_data = torch.load('train_embeddings.pt')
-
-eeg_embeddings = train_data['eeg']   # shape [N_train, eeg_dim]
-text_embeddings = train_data['text'] # shape [N_train, text_dim]
-
-print(f"EEG Embeddings Shape: {eeg_embeddings.shape}")
-print(f"Text Embeddings Shape: {text_embeddings.shape}")
-
-assert len(eeg_embeddings) == len(text_embeddings), "Mismatch in EEG and Text samples!"
-
-
-
+print(f"Loaded {len(eeg_all)} training samples.")
 
 # === Dataset ===
 class EmbeddingDataset(Dataset):
-    def __init__(self, eeg_embeds, text_embeds):
-        self.eeg = eeg_embeds
-        self.text = text_embeds
+    def __init__(self, eeg, text):
+        self.eeg = eeg
+        self.text = text
 
     def __len__(self):
         return len(self.eeg)
 
     def __getitem__(self, idx):
-        return {
-            'eeg': self.eeg[idx],
-            'text': self.text[idx]
-        }
+        return {'eeg': self.eeg[idx], 'text': self.text[idx]}
 
-dataset = EmbeddingDataset(eeg_embeddings, text_embeddings)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+# Create dataset and split
+full_dataset = EmbeddingDataset(eeg_all, text_all)
+val_size = int(len(full_dataset) * val_ratio)
+train_size = len(full_dataset) - val_size
+train_set, val_set = random_split(full_dataset, [train_size, val_size])
+
+train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True)
+val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 
 # === Model ===
-eeg_dim = eeg_embeddings.shape[1]
-text_dim = text_embeddings.shape[1]
-embed_dim = 512  # common latent dimension
+eeg_dim = eeg_all.shape[1]
+text_dim = text_all.shape[1]
+embed_dim = 512
 
 model = EEGTextCLIP(eeg_dim, text_dim, embed_dim).to(device)
-
-# === Optimizer, Loss ===
 optimizer = optim.AdamW(model.parameters(), lr=lr)
 criterion = nn.CrossEntropyLoss()
 
-# === Load checkpoint if exists ===
+# === Checkpoint ===
 checkpoint_path = "clip_baseline_checkpoint.pth"
+loss_path = "loss_clip_history.pt"
 start_epoch = 0
+train_losses = []
+val_losses = []
 
+# === Resume if available ===
 if os.path.exists(checkpoint_path):
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['model_state_dict'], strict=False)
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    start_epoch = checkpoint['epoch'] + 1  # continue from next epoch
-    print(f"Loaded checkpoint from epoch {start_epoch}")
-else:
-    print("No checkpoint found, starting fresh.")
+    start_epoch = checkpoint['epoch'] + 1
+    print(f"Resumed from epoch {start_epoch}")
+
+# === Load previous loss history if any ===
+if os.path.exists(loss_path):
+    saved = torch.load(loss_path)
+    train_losses = saved['train']
+    val_losses = saved['val']
+    print(f"Loaded previous loss history ({len(train_losses)} epochs)")
 
 # === Training ===
 for epoch in range(start_epoch, epochs):
     model.train()
-    total_loss = 0
+    total_train_loss = 0
 
-    for batch in dataloader:
-        eeg = batch['eeg'].to(device)    # [B, eeg_dim]
-        text = batch['text'].to(device)  # [B, text_dim]
+    for batch in train_loader:
+        eeg = batch['eeg'].to(device)
+        text = batch['text'].to(device)
 
         optimizer.zero_grad()
-        eeg_proj, text_proj = model(eeg, text)  # [B, embed_dim] each
+        
+        # === Get projections and scale ===
+        eeg_proj, text_proj, scale = model(eeg, text)
 
-        # === Compute logits ===
-        logits_per_eeg = (eeg_proj @ text_proj.t())  # [B, B]
-        logits_per_text = logits_per_eeg.t()         # [B, B]
+        # === Contrastive logits ===
+        logits_eeg = (eeg_proj @ text_proj.t()) * scale
+        logits_text = logits_eeg.t()
 
-        # Scale logits by temperature
-        logits_per_eeg = logits_per_eeg * model.logit_scale.exp()
-        logits_per_text = logits_per_text * model.logit_scale.exp()
-
-        labels = torch.arange(len(eeg)).to(device)  # [0, 1, 2, ..., B-1]
-
-        loss_eeg = criterion(logits_per_eeg, labels)
-        loss_text = criterion(logits_per_text, labels)
-        loss = (loss_eeg + loss_text) / 2
+        labels = torch.arange(len(eeg)).to(device)
+        loss = (criterion(logits_eeg, labels) + criterion(logits_text, labels)) / 2
 
         loss.backward()
         optimizer.step()
+        
+        total_train_loss += loss.item()
 
-        total_loss += loss.item()
+        
 
-    avg_loss = total_loss / len(dataloader)
-    print(f"Epoch {epoch+1}/{epochs}, Loss: {avg_loss:.4f}")
+    avg_train_loss = total_train_loss / len(train_loader)
+    train_losses.append(avg_train_loss)
 
-    # === Save checkpoint every N epochs ===
-    if (epoch + 1) % 5 == 0:  # Save every 5 epochs
+    # === Validation ===
+    model.eval()
+    total_val_loss = 0
+
+    with torch.no_grad():
+        for batch in val_loader:
+            eeg = batch['eeg'].to(device)
+            text = batch['text'].to(device)
+
+            eeg_proj, text_proj, scale = model(eeg, text)
+
+            logits_eeg = (eeg_proj @ text_proj.t()) * scale
+            logits_text = logits_eeg.t()
+
+            labels = torch.arange(len(eeg)).to(device)
+            loss = (criterion(logits_eeg, labels) + criterion(logits_text, labels)) / 2
+            total_val_loss += loss.item()
+
+    avg_val_loss = total_val_loss / len(val_loader)
+    val_losses.append(avg_val_loss)
+
+    print(f"Epoch {epoch+1}/{epochs}, Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}")
+
+    # === Save Checkpoint ===
+    if (epoch + 1) % 5 == 0 or epoch == epochs - 1:
         torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
         }, checkpoint_path)
-        print(f"Checkpoint saved at epoch {epoch+1}!")
+        print(f"Checkpoint saved at epoch {epoch+1}")
 
-# === Save the final model ===
+# === Save Final Model ===
 torch.save(model.state_dict(), "clip_baseline_model.pth")
-print("Training done and final model saved!")
+print("Training complete and model saved.")
+
+# === Save Loss History ===
+torch.save({'train': train_losses, 'val': val_losses}, loss_path)
+print(f"Saved loss history to {loss_path}")
+
+# === Plot ===
+plt.figure(figsize=(8, 5))
+plt.plot(train_losses, label='Train Loss', linewidth=2)
+plt.plot(val_losses, label='Val Loss', linewidth=2)
+plt.xlabel("Epoch")
+plt.ylabel("Contrastive Loss")
+plt.title("CLIP Training Loss (Train vs. Val)")
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+plt.savefig("loss_clip_curve.png")
+plt.close()
