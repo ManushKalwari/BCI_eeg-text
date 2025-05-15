@@ -1,21 +1,23 @@
 import torch
 from sklearn.model_selection import train_test_split
 
-# Load your existing embeddings
-eeg_embeddings = torch.load("eeg_embeddings.pt")
-text_embeddings = torch.load("text_embeddings.pt")
-text_embeddings = text_embeddings['embeddings']  # if it's a dict
+# Load embeddings
+eeg_embeddings = torch.load("eeg_embeddings.pt")  # Tensor: [N, 256]
+text_data = torch.load("text_embeddings.pt")      # Dict with 'embeddings' + 'words'
 
-# Train-Test Split
-eeg_train, eeg_test, text_train, text_test = train_test_split(
-    eeg_embeddings, text_embeddings, 
-    test_size=0.2,  # 80% train, 20% test
+text_embeddings = text_data['embeddings']         # Tensor: [N, 768]
+text_words = text_data['words']                   # List of N strings
+
+# === Train-Test Split (on aligned triplets) ===
+eeg_train, eeg_test, emb_train, emb_test, words_train, words_test = train_test_split(
+    eeg_embeddings, text_embeddings, text_words,
+    test_size=0.2,
     random_state=42,
     shuffle=True
 )
 
-# Save splits
-torch.save({'eeg': eeg_train, 'text': text_train}, 'train_embeddings.pt')
-torch.save({'eeg': eeg_test, 'text': text_test}, 'test_embeddings.pt')
+# === Save all ===
+torch.save({'eeg': eeg_train, 'text': emb_train, 'words': words_train}, 'train_embeddings.pt')
+torch.save({'eeg': eeg_test, 'text': emb_test, 'words': words_test}, 'test_embeddings.pt')
 
-print("Saved train and test splits!")
+print("Saved train and test splits with raw text!")
