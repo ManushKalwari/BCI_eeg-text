@@ -14,10 +14,10 @@ import matplotlib.pyplot as plt
 from clip_baseline import EEGTextCLIP
 
 # === Hyperparameters ===
-batch_size = 256
+batch_size = 64
 lr = 1e-6
-epochs = 500
-val_ratio = 0.2
+epochs = 400
+val_ratio = 0.3
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # === Load full train embeddings ===
@@ -52,7 +52,7 @@ val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 # === Model ===
 eeg_dim = eeg_all.shape[1]
 text_dim = text_all.shape[1]
-embed_dim = 512
+embed_dim = 128
 
 model = EEGTextCLIP(eeg_dim, text_dim, embed_dim).to(device)
 optimizer = optim.AdamW(model.parameters(), lr=lr)

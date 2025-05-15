@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+
 # === EEG Encoder ===
 class EEGEncoder(nn.Module):
     def __init__(self, eeg_dim, embed_dim):
@@ -13,9 +14,9 @@ class EEGEncoder(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.3)
         )
-
     def forward(self, eeg):
         return self.encoder(eeg)
+
 
 # === Text Encoder ===
 class TextEncoder(nn.Module):
@@ -27,13 +28,14 @@ class TextEncoder(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.3)
         )
-
     def forward(self, text):
         return self.encoder(text)
 
+
+
 # === Full CLIP Model ===
 class EEGTextCLIP(nn.Module):
-    def __init__(self, eeg_dim, text_dim, embed_dim=512):
+    def __init__(self, eeg_dim, text_dim, embed_dim=128):
         super().__init__()
         self.eeg_encoder = EEGEncoder(eeg_dim, embed_dim)
         self.text_encoder = TextEncoder(text_dim, embed_dim)
@@ -50,9 +52,12 @@ class EEGTextCLIP(nn.Module):
         scale = self.logit_scale.clamp(max=np.log(100.0)).exp()
         return eeg_embeds, text_embeds, scale
 
+
+
 # === Contrastive Loss ===
 def clip_loss(logits):
     labels = torch.arange(logits.size(0), device=logits.device)
     loss_eeg_to_text = F.cross_entropy(logits, labels)
     loss_text_to_eeg = F.cross_entropy(logits.t(), labels)
     return (loss_eeg_to_text + loss_text_to_eeg) / 2
+
