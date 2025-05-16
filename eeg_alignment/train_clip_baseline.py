@@ -12,11 +12,12 @@ from torch.utils.data import DataLoader, Dataset, random_split
 import torch.optim as optim
 import matplotlib.pyplot as plt
 from clip_baseline import EEGTextCLIP
+from lion_pytorch import Lion
 
 # === Hyperparameters ===
-batch_size = 64
+batch_size = 128
 lr = 1e-6
-epochs = 400
+epochs = 1500
 val_ratio = 0.3
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -52,10 +53,11 @@ val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
 # === Model ===
 eeg_dim = eeg_all.shape[1]
 text_dim = text_all.shape[1]
-embed_dim = 128
+embed_dim = 64
 
 model = EEGTextCLIP(eeg_dim, text_dim, embed_dim).to(device)
 optimizer = optim.AdamW(model.parameters(), lr=lr)
+#optimizer = Lion(model.parameters(), lr=lr, weight_decay=1e-2)
 criterion = nn.CrossEntropyLoss()
 
 # === Checkpoint ===

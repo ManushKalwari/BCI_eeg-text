@@ -12,11 +12,11 @@ class EEGEncoder(nn.Module):
             nn.Linear(eeg_dim, embed_dim),
             nn.LayerNorm(embed_dim),
             nn.ReLU(),
-            nn.Dropout(0.3)
+            nn.LayerNorm(embed_dim)
         )
+
     def forward(self, eeg):
         return self.encoder(eeg)
-
 
 # === Text Encoder ===
 class TextEncoder(nn.Module):
@@ -26,8 +26,9 @@ class TextEncoder(nn.Module):
             nn.Linear(text_dim, embed_dim),
             nn.LayerNorm(embed_dim),
             nn.ReLU(),
-            nn.Dropout(0.3)
+            nn.LayerNorm(embed_dim)
         )
+
     def forward(self, text):
         return self.encoder(text)
 
@@ -35,7 +36,7 @@ class TextEncoder(nn.Module):
 
 # === Full CLIP Model ===
 class EEGTextCLIP(nn.Module):
-    def __init__(self, eeg_dim, text_dim, embed_dim=128):
+    def __init__(self, eeg_dim, text_dim, embed_dim):
         super().__init__()
         self.eeg_encoder = EEGEncoder(eeg_dim, embed_dim)
         self.text_encoder = TextEncoder(text_dim, embed_dim)
