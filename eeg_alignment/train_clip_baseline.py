@@ -17,7 +17,7 @@ from lion_pytorch import Lion
 # === Hyperparameters ===
 batch_size = 128
 lr = 1e-6
-epochs = 1500
+epochs = 400
 val_ratio = 0.3
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

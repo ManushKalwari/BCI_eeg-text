@@ -1,3 +1,12 @@
+import sys
+import os
+
+# Add eeg_alignment to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'eeg_alignment')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'eeg_pretraining')))
+
+
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import BartTokenizer

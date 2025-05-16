@@ -1,3 +1,10 @@
+import sys
+import os
+
+# Add eeg_alignment to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'eeg_alignment')))
+
+
 from transformers import BartTokenizer, BartForConditionalGeneration
 import torch
 import torch.nn as nn
