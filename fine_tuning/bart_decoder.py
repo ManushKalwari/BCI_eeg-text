@@ -16,7 +16,7 @@ checkpoint_path = "/content/clip_baseline_model.pth"
 # === Hyperparameters ===
 eeg_dim = 256
 text_dim = 768
-embed_dim = 512
+embed_dim = 128
 
 # Load the trained CLIP model
 clip_model = EEGTextCLIP(eeg_dim=eeg_dim, text_dim=text_dim, embed_dim=embed_dim)
@@ -43,22 +43,19 @@ class EEGtoBART(nn.Module):
             eeg_features = self.eeg_encoder(eeg)  # [B, embed_dim]
 
         eeg_features = self.project(eeg_features).unsqueeze(1)  # [B, 1, hidden_dim]
-
         encoder_outputs = (eeg_features,)  # wrapped as tuple!
-
         outputs = self.bart(encoder_outputs=encoder_outputs, labels=labels)
         return outputs
 
 
 
 # === Setup Full Model ===
-bart_hidden_dim = bart_decoder.config.d_model  # usually 768
 
 model = EEGtoBART(
     eeg_encoder=eeg_encoder,
     bart_model=bart_decoder,
     eeg_embed_dim=embed_dim,
-    bart_hidden_dim=bart_hidden_dim
+    bart_hidden_dim=bart_decoder.config.d_model
 )
 
 print("Model ready: EEG Encoder → Projection → BART Decoder!")

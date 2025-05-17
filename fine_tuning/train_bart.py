@@ -15,9 +15,10 @@ from bart_decoder import EEGtoBART
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Using device: {device}")
 
+
 # === Load EEG encoder ===
-clip_model = EEGTextCLIP(eeg_dim=256, text_dim=768, embed_dim=512)
-clip_model.load_state_dict(torch.load("clip_baseline_model.pth", map_location=device))
+clip_model = EEGTextCLIP(eeg_dim=256, text_dim=768, embed_dim=128)
+clip_model.load_state_dict(torch.load("/content/clip_baseline_model.pth", map_location=device))
 clip_model.eval()
 
 eeg_encoder = clip_model.eeg_encoder
@@ -25,11 +26,13 @@ for param in eeg_encoder.parameters():
     param.requires_grad = False
 print("Loaded frozen EEG encoder.")
 
+
 # === Load dataset ===
 train_data = torch.load('/content/train_embeddings.pt', map_location=device)
 eeg_embeddings = train_data['eeg']
 text_labels = train_data['words']
 print(f"Loaded {len(eeg_embeddings)} samples.")
+
 
 # === Tokenizer ===
 tokenizer = BartTokenizer.from_pretrained('facebook/bart-base')
@@ -62,7 +65,7 @@ val_loader = DataLoader(val_dataset, batch_size=32)
 
 # === Initialize model ===
 bart_model = BartForConditionalGeneration.from_pretrained('facebook/bart-base')
-model = EEGtoBART(eeg_encoder, bart_model, eeg_embed_dim=512, bart_hidden_dim=bart_model.config.d_model)
+model = EEGtoBART(eeg_encoder, bart_model, eeg_embed_dim=128, bart_hidden_dim=bart_model.config.d_model)
 model = model.to(device)
 
 optimizer = optim.AdamW(model.parameters(), lr=1e-4)
@@ -79,7 +82,7 @@ if os.path.exists(checkpoint_path):
     print(f"✅ Resumed from checkpoint: {checkpoint_path} (epoch {checkpoint['epoch']})")
 
 # === Training Loop ===
-epochs = 90
+epochs = 12
 save_every = 5
 train_losses = []
 val_losses = []

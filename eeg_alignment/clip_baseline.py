@@ -9,8 +9,8 @@ class EEGEncoder(nn.Module):
     def __init__(self, eeg_dim, embed_dim):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(eeg_dim, 128),
-            nn.LayerNorm(128),
+            nn.Linear(eeg_dim, embed_dim),
+            nn.LayerNorm(embed_dim),
             nn.ReLU(),
             nn.Dropout(0.3)
         )
@@ -18,13 +18,13 @@ class EEGEncoder(nn.Module):
     def forward(self, eeg):
         return self.encoder(eeg)
 
-# === Text Encoder ===
+# === Text Encoder ==8
 class TextEncoder(nn.Module):
     def __init__(self, text_dim, embed_dim):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Linear(text_dim, 128),
-            nn.LayerNorm(128),
+            nn.Linear(text_dim, embed_dim),
+            nn.LayerNorm(embed_dim),
             nn.ReLU(),
             nn.Dropout(0.3)
         )
