@@ -53,17 +53,17 @@ checkpoint = torch.load('/content/bart_decoder_checkpoint_epoch.pth', map_locati
 model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
-# === Load test EEG embeddings ===
-test_data = torch.load('/content/test_embeddings.pt', map_location=device)
-eeg_test_embeddings = test_data['eeg']  # [N_test, 256]
-print(f"Loaded EEG test embeddings: {eeg_test_embeddings.shape}")
 
-# === Load corresponding reference words ===
-data_dir = '/content/drive/MyDrive/BCI_trainingData/'  # Adjust if needed
-text_dataset = EEGTextDataset(data_dir)
-ref_words = [sample['word'] for sample in text_dataset]
-ref_words = ref_words[-len(eeg_test_embeddings):]  # assuming test is the last part
+
+# === Load test embeddings ===
+test_data = torch.load('/content/test_embeddings.pt', map_location=device)
+
+eeg_train_embeddings = test_data['eeg']  # [N_train, 256]
+ref_words = test_data['words']
+print(f"Loaded EEG train embeddings: {eeg_train_embeddings.shape}")
 print(f"Using {len(ref_words)} reference words.")
+
+
 
 # === Dataset and Dataloader ===
 class EEGTestDataset(Dataset):

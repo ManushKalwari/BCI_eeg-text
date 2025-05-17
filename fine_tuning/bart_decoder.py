@@ -11,7 +11,7 @@ import torch.nn as nn
 from clip_baseline import EEGTextCLIP
 
 # === Load CLIP model checkpoint ===
-checkpoint_path = "clip_baseline_model.pth"
+checkpoint_path = "/content/clip_baseline_model.pth"
 
 # === Hyperparameters ===
 eeg_dim = 256
