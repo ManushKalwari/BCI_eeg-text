@@ -1,5 +1,8 @@
 # EEG → Text (BCI_eeg-text)
 
+<img width="630" height="767" alt="image" src="https://github.com/user-attachments/assets/43718960-21b9-4707-ab79-769a30f302b4" />
+
+
 **Modular EEG-to-Text decoding** that:
 1) self-supervises an EEG encoder,  
 2) aligns EEG ↔ text embeddings via a CLIP-style contrastive loss, and  
