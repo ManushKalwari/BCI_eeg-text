@@ -9,10 +9,10 @@
 ---
 
 ## 🚀 Key Ideas
-- **EEG encoder pretraining** with masked autoencoding to learn local/global temporal structure. :contentReference[oaicite:3]{index=3}  
-- **Contrastive alignment**: project EEG and BERT embeddings to a shared space; optimize symmetric InfoNCE with temperature. :contentReference[oaicite:4]{index=4}  
-- **Decoder**: freeze the EEG encoder, condition a **BART** decoder on the projected EEG vector; train autoregressively. :contentReference[oaicite:5]{index=5}  
-- **No teacher forcing at inference** (to mirror real deployments). :contentReference[oaicite:6]{index=6}
+- **EEG encoder pretraining** with masked autoencoding to learn local/global temporal structure. 
+- **Contrastive alignment**: project EEG and BERT embeddings to a shared space; optimize symmetric InfoNCE with temperature.  
+- **Decoder**: freeze the EEG encoder, condition a **BART** decoder on the projected EEG vector; train autoregressively. 
+- **No teacher forcing at inference** (to mirror real deployments). 
 
 ---
 
@@ -32,13 +32,13 @@ _If your file layout differs, adjust these paths in the commands below._
 ---
 
 ## 🧠 Dataset: ZuCo 2.0 (Natural Reading)
-We use **ZuCo 2.0** (EEG during natural reading). EEG sampled with 128-channel BioSemi at 500 Hz; we use the NR subset. Download per the dataset license and place under `data/`. :contentReference[oaicite:7]{index=7}
+We use **ZuCo 2.0** (EEG during natural reading). EEG sampled with 128-channel BioSemi at 500 Hz; we use the NR subset. Download per the dataset license and place under `data/`. 
 
 Preprocessing (high level):
 - segment time series to overlapping patches;  
 - artifact removal + normalization;  
 - align word-level EEG segments with text;  
-- produce word/phrase text labels. :contentReference[oaicite:8]{index=8}
+- produce word/phrase text labels.
 
 ---
 
