@@ -16,21 +16,6 @@
 
 ---
 
-## 📦 Repo Structure
-BCI_eeg-text/
-├─ data/ # (expected) ZuCo 2.0 processed tensors / metadata
-├─ eeg_pretrain/ # masked autoencoder for EEG
-├─ align/ # EEG↔Text contrastive alignment (CLIP-style)
-├─ decode/ # BART-based autoregressive decoder
-├─ scripts/ # end-to-end run scripts
-├─ utils/ # common loaders, metrics, logging
-└─ README.md
-
-
-_If your file layout differs, adjust these paths in the commands below._
-
----
-
 ## 🧠 Dataset: ZuCo 2.0 (Natural Reading)
 We use **ZuCo 2.0** (EEG during natural reading). EEG sampled with 128-channel BioSemi at 500 Hz; we use the NR subset. Download per the dataset license and place under `data/`. 
 
