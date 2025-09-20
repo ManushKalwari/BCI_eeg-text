@@ -3,7 +3,7 @@
 **Modular EEG-to-Text decoding** that:
 1) self-supervises an EEG encoder,  
 2) aligns EEG ↔ text embeddings via a CLIP-style contrastive loss, and  
-3) decodes with a BART-based autoregressive head. :contentReference[oaicite:1]{index=1}
+3) decodes with a BART-based autoregressive head.
 
 > TL;DR: We align noisy EEG to language embeddings, then generate text with a pretrained LM. The pipeline is designed for **generalization without teacher forcing** at inference. :contentReference[oaicite:2]{index=2}
 
