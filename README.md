@@ -5,8 +5,7 @@
 2) aligns EEG ↔ text embeddings via a CLIP-style contrastive loss, and  
 3) decodes with a BART-based autoregressive head.
 
-> TL;DR: We align noisy EEG to language embeddings, then generate text with a pretrained LM. The pipeline is designed for **generalization without teacher forcing** at inference. :contentReference[oaicite:2]{index=2}
-
+> TL;DR: We align noisy EEG to language embeddings, then generate text with a pretrained LM. The pipeline is designed for **generalization without teacher forcing** at inference. 
 ---
 
 ## 🚀 Key Ideas
